@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gire a Roleta e Ganhe Prémios Incríveis!</title>
+    
+    <!-- Tailwind CSS via CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;800&display=swap" rel="stylesheet">
+
+    <style>
+        /* Estilos personalizados para a roleta e fontes */
+        body {
+            font-family: 'Poppins', sans-serif;
+        }
+
+        .roulette-wrapper {
+            position: relative;
+            width: clamp(300px, 80vw, 400px);
+            height: clamp(300px, 80vw, 400px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .roulette-pointer {
+            position: absolute;
+            top: -10px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 0;
+            height: 0;
+            border-left: 20px solid transparent;
+            border-right: 20px solid transparent;
+            border-top: 35px solid #facc15; /* Amarelo do Tailwind (yellow-400) */
+            z-index: 10;
+            filter: drop-shadow(0px -2px 3px rgba(0,0,0,0.3));
+            transition: transform 0.3s ease;
+        }
+
+        .roulette-center-cap {
+            position: absolute;
+            width: 60px;
+            height: 60px;
+            background: #1f2937; /* gray-800 */
+            border-radius: 50%;
+            border: 5px solid #d1d5db; /* gray-300 */
+            z-index: 5;
+            box-shadow: 0 0 10px rgba(0,0,0,0.2);
+        }
+
+        .roulette-wheel {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            border: 10px solid #d1d5db; /* gray-300 */
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.3), inset 0 0 15px rgba(0,0,0,0.4);
+            transition: transform 10s cubic-bezier(0.1, 0.5, 0.2, 1);
+        }
+
+        .roulette-segment {
+            position: absolute;
+            width: 50%;
+            height: 50%;
+            top: 0;
+            left: 25%;
+            transform-origin: 50% 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: clamp(0.7rem, 2.5vw, 1rem);
+            color: white;
+            clip-path: polygon(50% 100%, 0 0, 100% 0);
+        }
+
+        .roulette-segment span {
+            display: inline-block;
+            padding: 0 5px;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+        }
+        
+        /* Animação para o modal */
+        .modal-enter {
+            opacity: 0;
+            transform: scale(0.9);
+        }
+        .modal-enter-active {
+            opacity: 1;
+            transform: scale(1);
+            transition: opacity 300ms, transform 300ms;
+        }
+        .modal-exit {
+            opacity: 1;
+            transform: scale(1);
+        }
+        .modal-exit-active {
+            opacity: 0;
+            transform: scale(0.9);
+            transition: opacity 300ms, transform 300ms;
+        }
+        
+        /* Spinner de carregamento */
+        .loader {
+            border: 4px solid #f3f3f3; /* Light grey */
+            border-top: 4px solid #facc15; /* Yellow */
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-white">
+
+    <!-- Seção Principal (Acima da Dobra) -->
+    <main id="roulette-app" class="min-h-screen flex flex-col items-center justify-center text-center p-6 bg-gradient-to-b from-gray-800 to-gray-900">
+        <div class="max-w-4xl mx-auto">
+            <h1 class="text-4xl md:text-6xl font-extrabold text-yellow-400 tracking-tight mb-4" style="text-shadow: 2px 2px 5px rgba(0,0,0,0.5);">A Sua Chance de Ganhar Chegou!</h1>
+            <p class="text-lg md:text-xl text-gray-300 mb-8 max-w-2xl mx-auto">Gire a roleta abaixo para concorrer a prémios exclusivos e descontos imperdíveis no nosso novo produto. A sorte está do seu lado!</p>
+
+            <!-- Componente da Roleta -->
+            <div class="roulette-wrapper mx-auto my-8">
+                <div class="roulette-pointer"></div>
+                <div class="roulette-center-cap"></div>
+                <div class="roulette-wheel">
+                    <!-- Segmentos serão gerados pelo JavaScript -->
+                </div>
+            </div>
+
+            <button id="spin-button" class="bg-yellow-400 text-gray-900 font-bold text-xl py-4 px-10 rounded-full shadow-lg hover:bg-yellow-300 transition-all duration-300 transform hover:scale-105 disabled:bg-gray-500 disabled:cursor-not-allowed disabled:transform-none">
+                GIRAR A ROLETA!
+            </button>
+            <p id="spin-count-text" class="mt-4 text-gray-400">Você tem 1 chance</p>
+        </div>
+    </main>
+
+    <!-- Seção "Como Funciona" -->
+    <section class="py-20 bg-gray-900">
+        <div class="container mx-auto px-6 text-center">
+            <h2 class="text-3xl font-bold mb-2">É Simples e Rápido!</h2>
+            <div class="h-1 w-20 bg-yellow-400 mx-auto mb-12"></div>
+            <div class="flex flex-wrap gap-8 justify-center">
+                <!-- Passo 1 -->
+                <div class="w-full sm:w-1/2 md:w-1/3 lg:w-1/4 bg-gray-800 p-6 rounded-lg shadow-xl">
+                    <div class="text-5xl font-extrabold text-yellow-400 mb-4">1</div>
+                    <h3 class="text-xl font-semibold mb-2">Gire a Roleta</h3>
+                    <p class="text-gray-400">Clique no botão para fazer a roleta girar e testar a sua sorte.</p>
+                </div>
+                <!-- Passo 2 -->
+                <div class="w-full sm:w-1/2 md:w-1/3 lg:w-1/4 bg-gray-800 p-6 rounded-lg shadow-xl">
+                    <div class="text-5xl font-extrabold text-yellow-400 mb-4">2</div>
+                    <h3 class="text-xl font-semibold mb-2">Veja o seu Prémio</h3>
+                    <p class="text-gray-400">Aguarde a roleta parar para descobrir o prémio incrível que você ganhou.</p>
+                </div>
+                <!-- Passo 3 -->
+                <div class="w-full sm:w-1/2 md:w-1/3 lg:w-1/4 bg-gray-800 p-6 rounded-lg shadow-xl">
+                    <div class="text-5xl font-extrabold text-yellow-400 mb-4">3</div>
+                    <h3 class="text-xl font-semibold mb-2">Resgate Agora</h3>
+                    <p class="text-gray-400">Use o seu cupão ou prémio na finalização da compra e aproveite!</p>
+                </div>
+            </div>
+        </div>
+    </section>
+    
+    <!-- NOVA SECÇÃO COM GEMINI API -->
+    <section class="py-20 bg-gray-800">
+        <div class="container mx-auto px-6 text-center max-w-3xl">
+            <h2 class="text-3xl font-bold mb-2">Ainda não se convenceu?</h2>
+            <p class="text-lg text-gray-400 mb-8">Deixe que a nossa IA lhe dê mais alguns motivos para não perder esta oportunidade!</p>
+            <button id="gemini-button" class="bg-purple-600 text-white font-bold text-lg py-3 px-8 rounded-full shadow-lg hover:bg-purple-500 transition-all duration-300 transform hover:scale-105 disabled:bg-gray-500 disabled:cursor-not-allowed">
+                ✨ Quero mais motivos!
+            </button>
+            <div id="reasons-container" class="mt-8 text-left text-lg text-gray-300 bg-gray-900 p-6 rounded-lg min-h-[150px] flex items-center justify-center">
+                <p>Os seus motivos personalizados aparecerão aqui...</p>
+            </div>
+             <div id="loading-spinner" class="loader mx-auto mt-8 hidden"></div>
+        </div>
+    </section>
+
+    <!-- Seção de Prémios -->
+    <section class="py-20 bg-gray-900">
+        <div class="container mx-auto px-6 text-center">
+            <h2 class="text-3xl font-bold mb-2">Prémios que Você Pode Ganhar</h2>
+            <div class="h-1 w-20 bg-yellow-400 mx-auto mb-12"></div>
+            <p class="text-lg text-gray-400 mb-8 max-w-2xl mx-auto">De descontos generosos a produtos gratuitos, cada giro é uma nova oportunidade de economizar e ganhar.</p>
+        </div>
+    </section>
+
+    <!-- Modal de Resultado -->
+    <div id="result-modal" class="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 hidden modal-enter">
+        <div class="bg-gray-800 rounded-lg shadow-xl p-8 max-w-sm w-full text-center transform">
+            <h2 id="modal-title" class="text-2xl font-bold text-yellow-400 mb-4">Parabéns!</h2>
+            <p id="modal-text" class="text-lg text-white mb-6">Você ganhou: <span class="font-bold"></span></p>
+            <button id="close-modal-button" class="bg-yellow-400 text-gray-900 font-bold py-2 px-6 rounded-full hover:bg-yellow-300 transition-all duration-300">
+                Resgatar Prémio
+            </button>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // Elementos da Roleta
+            const wheel = document.querySelector('.roulette-wheel');
+            const spinButton = document.getElementById('spin-button');
+            const spinCountText = document.getElementById('spin-count-text');
+            
+            // Elementos do Modal
+            const resultModal = document.getElementById('result-modal');
+            const modalTitle = document.getElementById('modal-title');
+            const modalText = document.querySelector('#modal-text span');
+            const closeModalButton = document.getElementById('close-modal-button');
+
+            // Elementos da Funcionalidade Gemini
+            const geminiButton = document.getElementById('gemini-button');
+            const reasonsContainer = document.getElementById('reasons-container');
+            const loadingSpinner = document.getElementById('loading-spinner');
+
+            // --- CONFIGURAÇÃO DA ROLETA ---
+            const segments = [
+                { label: '50% OFF', value: '50_percent_off' },
+                { label: 'Tente de Novo', value: 'try_again' },
+                { label: 'R$20 de Bónus', value: '20_bonus' },
+                { label: 'Frete Grátis', value: 'free_shipping' },
+                { label: 'Produto Surpresa', value: 'surprise_product' },
+                { label: '10% OFF', value: '10_percent_off' },
+                { label: '+1 Rodada', value: 'extra_spin' },
+                { label: 'R$5 de Bónus', value: '5_bonus' },
+            ];
+            const segmentColors = ["#ef4444", "#3b82f6", "#f97316", "#10b981", "#8b5cf6", "#f59e0b", "#ec4899", "#6366f1"];
+            const segmentAngle = 360 / segments.length;
+
+            let isSpinning = false;
+            let currentRotation = 0;
+            let spinCount = 1;
+
+            // --- FUNÇÕES DA ROLETA ---
+            const createWheel = () => {
+                segments.forEach((segment, index) => {
+                    const segmentEl = document.createElement('div');
+                    segmentEl.className = 'roulette-segment';
+                    segmentEl.style.backgroundColor = segmentColors[index % segmentColors.length];
+                    segmentEl.style.transform = `rotate(${segmentAngle * index}deg)`;
+                    
+                    const spanEl = document.createElement('span');
+                    spanEl.textContent = segment.label;
+                    spanEl.style.transform = `rotate(${segmentAngle / 2}deg) translateY(-20%)`;
+                    
+                    segmentEl.appendChild(spanEl);
+                    wheel.appendChild(segmentEl);
+                });
+            };
+
+            const updateSpinCountText = () => {
+                spinCountText.textContent = `Você tem ${spinCount} chance${spinCount !== 1 ? 's' : ''}`;
+            };
+
+            const showModal = (winningSegment) => {
+                if (winningSegment.value === 'try_again') {
+                    modalTitle.textContent = "Não foi desta vez...";
+                    modalText.textContent = "Gire novamente quando tiver outra chance!";
+                } else if (winningSegment.value === 'extra_spin') {
+                    modalTitle.textContent = "Que Sorte!";
+                    modalText.textContent = "Você ganhou +1 rodada!";
+                } else {
+                    modalTitle.textContent = "Parabéns!";
+                    modalText.textContent = winningSegment.label;
+                }
+                
+                resultModal.classList.remove('hidden');
+                resultModal.classList.add('modal-enter-active');
+            };
+            
+            const hideModal = () => {
+                resultModal.classList.add('modal-exit-active');
+                setTimeout(() => resultModal.classList.add('hidden'), 300);
+            };
+
+            const handleSpin = () => {
+                if (isSpinning || spinCount <= 0) return;
+
+                isSpinning = true;
+                spinCount--;
+                updateSpinCountText();
+                spinButton.disabled = true;
+
+                const randomIndex = Math.floor(Math.random() * segments.length);
+                const winningSegment = segments[randomIndex];
+                
+                const fullSpins = 5;
+                const baseRotation = fullSpins * 360;
+                const winningAngle = 360 - (segmentAngle * randomIndex) - (segmentAngle / 2);
+                const randomOffset = (Math.random() - 0.5) * (segmentAngle * 0.8);
+                const finalRotation = baseRotation + winningAngle + randomOffset;
+                
+                currentRotation += finalRotation;
+                wheel.style.transform = `rotate(${currentRotation}deg)`;
+
+                setTimeout(() => {
+                    isSpinning = false;
+                    if (winningSegment.value === 'extra_spin') {
+                        spinCount++;
+                        updateSpinCountText();
+                    }
+                    if (spinCount > 0) {
+                        spinButton.disabled = false;
+                    }
+                    showModal(winningSegment);
+                }, 10000);
+            };
+
+            // --- FUNÇÃO DA API GEMINI ---
+            const generateReasons = async () => {
+                geminiButton.disabled = true;
+                reasonsContainer.classList.add('hidden');
+                loadingSpinner.classList.remove('hidden');
+
+                const productName = "o nosso mais recente produto de software"; // Pode personalizar o nome do produto
+                const prompt = `Aja como um especialista em marketing. Crie 3 motivos curtos e persuasivos, em formato de lista HTML (<li>), para um cliente comprar "${productName}". Use um tom entusiasmado e foque nos benefícios diretos para o cliente. Não inclua a tag <ul>.`;
+
+                const chatHistory = [{ role: "user", parts: [{ text: prompt }] }];
+                const payload = { contents: chatHistory };
+                const apiKey = ""; // A chave da API será fornecida pelo ambiente, se necessário
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+
+                try {
+                    const response = await fetch(apiUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+
+                    if (!response.ok) {
+                        throw new Error(`Erro HTTP! Status: ${response.status}`);
+                    }
+
+                    const result = await response.json();
+                    
+                    if (result.candidates && result.candidates[0]?.content?.parts[0]?.text) {
+                        const text = result.candidates[0].content.parts[0].text;
+                        reasonsContainer.innerHTML = `<ul class="list-disc list-inside space-y-2">${text}</ul>`;
+                    } else {
+                       reasonsContainer.innerHTML = '<p class="text-red-400">Não foi possível gerar os motivos. Tente novamente.</p>';
+                    }
+                } catch (error) {
+                    console.error("Erro ao chamar a API Gemini:", error);
+                    reasonsContainer.innerHTML = '<p class="text-red-400">Ocorreu um erro de comunicação. Por favor, tente mais tarde.</p>';
+                } finally {
+                    loadingSpinner.classList.add('hidden');
+                    reasonsContainer.classList.remove('hidden');
+                    geminiButton.disabled = false;
+                }
+            };
+
+            // --- INICIALIZAÇÃO E EVENTOS ---
+            createWheel();
+            updateSpinCountText();
+            spinButton.addEventListener('click', handleSpin);
+            closeModalButton.addEventListener('click', hideModal);
+            geminiButton.addEventListener('click', generateReasons);
+        });
+    </script>
+
+</body>
+</html>
